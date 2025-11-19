@@ -282,12 +282,16 @@ export default function ProductPage() {
                     Key Features
                   </h2>
                   <ul className="space-y-3">
-                    {product.featureBullets.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-3 group">
-                        <span className="mt-1.5 h-2 w-2 rounded-full bg-primary flex-shrink-0 group-hover:scale-125 transition-transform" />
-                        <span className="text-sm md:text-base text-muted-foreground leading-relaxed">{feature}</span>
-                      </li>
-                    ))}
+                    {product.featureBullets.map((feature, idx) => {
+                      // Remove trailing asterisks used for footnotes
+                      const cleanFeature = feature.replace(/\*+$/g, '').trim();
+                      return (
+                        <li key={idx} className="flex items-start gap-3 group">
+                          <span className="mt-1.5 h-2 w-2 rounded-full bg-primary flex-shrink-0 group-hover:scale-125 transition-transform" />
+                          <span className="text-sm md:text-base text-muted-foreground leading-relaxed">{cleanFeature}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </CardContent>
               </Card>
