@@ -315,6 +315,11 @@ export default function Home() {
                         {product.subCategoryName}
                       </Badge>
                     </CardDescription>
+                    {product.retailPrice && (
+                      <p className="text-lg font-bold text-primary mt-2">
+                        ${product.retailPrice.toFixed(2)}
+                      </p>
+                    )}
                   </CardContent>
                   <CardFooter>
                     <Button 
