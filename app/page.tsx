@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -35,19 +35,22 @@ interface Product {
 
 export default function Home() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [subCategories, setSubCategories] = useState<string[]>([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
-    undefined
+    searchParams.get("category") || undefined
   );
   const [selectedSubCategory, setSelectedSubCategory] = useState<
     string | undefined
-  >(undefined);
+  >(searchParams.get("subcategory") || undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    parseInt(searchParams.get("page") || "1")
+  );
   const [totalProducts, setTotalProducts] = useState(0);
   const productsPerPage = 20;
 
@@ -59,6 +62,31 @@ export default function Home() {
         console.error('Failed to fetch categories:', error);
       });
   }, []);
+
+  // Update URL when filters or pagination change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (selectedCategory) params.set("category", selectedCategory);
+    if (selectedSubCategory) params.set("subcategory", selectedSubCategory);
+    if (currentPage > 1) params.set("page", currentPage.toString());
+    
+    const newURL = params.toString() ? `/?${params.toString()}` : "/";
+    const currentURL = window.location.pathname + window.location.search;
+    
+    // Only update URL if it's different to avoid unnecessary history entries
+    if (currentURL !== newURL) {
+      router.push(newURL, { scroll: false });
+    }
+  }, [search, selectedCategory, selectedSubCategory, currentPage, router]);
+
+  // Sync state with URL when user uses browser back/forward buttons
+  useEffect(() => {
+    setSearch(searchParams.get("search") || "");
+    setSelectedCategory(searchParams.get("category") || undefined);
+    setSelectedSubCategory(searchParams.get("subcategory") || undefined);
+    setCurrentPage(parseInt(searchParams.get("page") || "1"));
+  }, [searchParams]);
 
   useEffect(() => {
     // Always reset subcategory when category changes
