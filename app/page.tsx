@@ -75,7 +75,12 @@ export default function Home() {
     fetch(`/api/products?${params}`)
       .then((res) => res.json())
       .then((data) => {
-        setProducts(data.products);
+        // Normalize products to ensure imageUrls is always an array
+        const normalizedProducts = data.products.map((product: Product) => ({
+          ...product,
+          imageUrls: product.imageUrls || [],
+        }));
+        setProducts(normalizedProducts);
         setLoading(false);
       });
   }, [search, selectedCategory, selectedSubCategory]);
