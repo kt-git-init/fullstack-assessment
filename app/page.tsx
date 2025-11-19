@@ -59,7 +59,9 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => setCategories(data.categories))
       .catch((error) => {
-        console.error('Failed to fetch categories:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to fetch categories:', error);
+        }
       });
   }, []);
 
@@ -97,7 +99,9 @@ export default function Home() {
         .then((res) => res.json())
         .then((data) => setSubCategories(data.subCategories))
         .catch((error) => {
-          console.error('Failed to fetch subcategories:', error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Failed to fetch subcategories:', error);
+          }
           setSubCategories([]);
         });
     } else {
@@ -151,7 +155,9 @@ export default function Home() {
           setLoading(false);
         })
         .catch((error) => {
-          console.error('Failed to fetch products:', error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Failed to fetch products:', error);
+          }
           if (error instanceof TypeError) {
             setError('Unable to connect to the server. Please check your internet connection.');
           } else {
@@ -176,15 +182,20 @@ export default function Home() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
+                type="search"
                 placeholder="Search products..."
+                aria-label="Search products"
                 value={search}
+                maxLength={100}
                 onChange={(e) => {
                   const value = e.target.value;
-                  setSearch(value);
-                  // Clear category filters when starting a search for global results
-                  if (value) {
-                    setSelectedCategory(undefined);
-                    setSelectedSubCategory(undefined);
+                  if (value.length <= 100) {
+                    setSearch(value);
+                    // Clear category filters when starting a search for global results
+                    if (value) {
+                      setSelectedCategory(undefined);
+                      setSelectedSubCategory(undefined);
+                    }
                   }
                 }}
                 className="pl-10"
@@ -345,7 +356,16 @@ export default function Home() {
                 <Card 
                   key={product.stacklineSku} 
                   className="h-full hover:shadow-lg transition-all hover:scale-[1.02] flex flex-col cursor-pointer group shadow-sm"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => router.push(`/product/${product.stacklineSku}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      router.push(`/product/${product.stacklineSku}`);
+                    }
+                  }}
+                  aria-label={`View details for ${product.title}`}
                 >
                   <CardHeader className="p-3 md:p-4">
                     <div className="relative h-36 md:h-40 w-full">
@@ -438,6 +458,7 @@ export default function Home() {
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                   className="w-full sm:w-auto"
+                  aria-label="Go to previous page"
                 >
                   <span className="hidden sm:inline">Previous</span>
                   <span className="sm:hidden">Prev</span>
@@ -465,6 +486,8 @@ export default function Home() {
                           size="sm"
                           onClick={() => setCurrentPage(page)}
                           className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
+                          aria-label={`Go to page ${page}`}
+                          aria-current={currentPage === page ? "page" : undefined}
                         >
                           {page}
                         </Button>
@@ -481,6 +504,7 @@ export default function Home() {
                   }
                   disabled={currentPage === Math.ceil(totalProducts / productsPerPage)}
                   className="w-full sm:w-auto"
+                  aria-label="Go to next page"
                 >
                   Next
                 </Button>
