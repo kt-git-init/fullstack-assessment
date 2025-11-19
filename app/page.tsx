@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,6 +47,9 @@ export default function Home() {
   >(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const productsPerPage = 20;
 
   useEffect(() => {
     fetch("/api/categories")
@@ -75,6 +78,11 @@ export default function Home() {
   }, [selectedCategory]);
 
   useEffect(() => {
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
+  }, [search, selectedCategory, selectedSubCategory]);
+
+  useEffect(() => {
     // Debounce search input
     const timeoutId = setTimeout(() => {
       setLoading(true);
@@ -90,7 +98,8 @@ export default function Home() {
         // When not searching, use category filters and pagination
         if (selectedCategory) params.append("category", selectedCategory);
         if (selectedSubCategory) params.append("subCategory", selectedSubCategory);
-        params.append("limit", "20");
+        params.append("limit", productsPerPage.toString());
+        params.append("offset", ((currentPage - 1) * productsPerPage).toString());
       }
 
       fetch(`/api/products?${params}`)
@@ -110,6 +119,7 @@ export default function Home() {
             imageUrls: product.imageUrls || [],
           }));
           setProducts(normalizedProducts);
+          setTotalProducts(data.total);
           setLoading(false);
         })
         .catch((error) => {
@@ -124,7 +134,7 @@ export default function Home() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [search, selectedCategory, selectedSubCategory]);
+  }, [search, selectedCategory, selectedSubCategory, currentPage, productsPerPage]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -228,7 +238,8 @@ export default function Home() {
         ) : (
           <>
             <p className="text-sm text-muted-foreground mb-4">
-              Showing {products.length} products
+              Showing {(currentPage - 1) * productsPerPage + 1} to{" "}
+              {Math.min(currentPage * productsPerPage, totalProducts)} of {totalProducts} products
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product) => (
@@ -284,6 +295,58 @@ export default function Home() {
                 </Card>
               ))}
             </div>
+
+            {/* Pagination */}
+            {totalProducts > productsPerPage && (
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex gap-1">
+                  {Array.from(
+                    { length: Math.ceil(totalProducts / productsPerPage) },
+                    (_, i) => i + 1
+                  )
+                    .filter(
+                      (page) =>
+                        page === 1 ||
+                        page === Math.ceil(totalProducts / productsPerPage) ||
+                        Math.abs(page - currentPage) <= 2
+                    )
+                    .map((page, idx, arr) => (
+                      <Fragment key={page}>
+                        {idx > 0 && arr[idx - 1] !== page - 1 && (
+                          <span className="px-3 py-2">
+                            ...
+                          </span>
+                        )}
+                        <Button
+                          variant={currentPage === page ? "default" : "outline"}
+                          onClick={() => setCurrentPage(page)}
+                          className="min-w-[40px]"
+                        >
+                          {page}
+                        </Button>
+                      </Fragment>
+                    ))}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setCurrentPage((prev) =>
+                      Math.min(Math.ceil(totalProducts / productsPerPage), prev + 1)
+                    )
+                  }
+                  disabled={currentPage === Math.ceil(totalProducts / productsPerPage)}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </>
         )}
       </main>
