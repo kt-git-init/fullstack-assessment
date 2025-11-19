@@ -80,10 +80,18 @@ export default function Home() {
       setLoading(true);
       setError(null);
       const params = new URLSearchParams();
-      if (search) params.append("search", search);
-      if (selectedCategory) params.append("category", selectedCategory);
-      if (selectedSubCategory) params.append("subCategory", selectedSubCategory);
-      params.append("limit", "20");
+
+      // When searching, search globally across all products (ignore category filters)
+      if (search) {
+        params.append("search", search);
+        params.append("limit", "1000"); // Higher limit for search to cover full dataset
+        params.append("offset", "0");
+      } else {
+        // When not searching, use category filters and pagination
+        if (selectedCategory) params.append("category", selectedCategory);
+        if (selectedSubCategory) params.append("subCategory", selectedSubCategory);
+        params.append("limit", "20");
+      }
 
       fetch(`/api/products?${params}`)
         .then((res) => {
@@ -130,7 +138,15 @@ export default function Home() {
               <Input
                 placeholder="Search products..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearch(value);
+                  // Clear category filters when starting a search for global results
+                  if (value) {
+                    setSelectedCategory(undefined);
+                    setSelectedSubCategory(undefined);
+                  }
+                }}
                 className="pl-10"
               />
             </div>
