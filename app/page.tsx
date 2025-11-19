@@ -297,7 +297,7 @@ export default function Home() {
                       )}
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-4">
+                  <CardContent className="pt-4 flex-1 flex flex-col">
                     <CardTitle className="text-base line-clamp-2 mb-2">
                       {product.title}
                     </CardTitle>
@@ -316,12 +316,12 @@ export default function Home() {
                       </Badge>
                     </CardDescription>
                     {product.retailPrice && (
-                      <p className="text-lg font-bold text-primary mt-2">
+                      <p className="text-lg font-bold text-primary mt-auto">
                         ${product.retailPrice.toFixed(2)}
                       </p>
                     )}
                   </CardContent>
-                  <CardFooter>
+                  <CardFooter className="pt-0 mt-auto">
                     <Button 
                       variant="outline" 
                       className="w-full"
