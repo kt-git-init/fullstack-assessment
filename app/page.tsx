@@ -75,42 +75,47 @@ export default function Home() {
   }, [selectedCategory]);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    const params = new URLSearchParams();
-    if (search) params.append("search", search);
-    if (selectedCategory) params.append("category", selectedCategory);
-    if (selectedSubCategory) params.append("subCategory", selectedSubCategory);
-    params.append("limit", "20");
+    // Debounce search input
+    const timeoutId = setTimeout(() => {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams();
+      if (search) params.append("search", search);
+      if (selectedCategory) params.append("category", selectedCategory);
+      if (selectedSubCategory) params.append("subCategory", selectedSubCategory);
+      params.append("limit", "20");
 
-    fetch(`/api/products?${params}`)
-      .then((res) => {
-        if (res.status >= 500) {
-          throw new Error('Server error. Please try again later.');
-        }
-        if (!res.ok) {
-          throw new Error('Failed to fetch products. Please try again.');
-        }
-        return res.json();
-      })
-      .then((data) => {
-        // Normalize products to ensure imageUrls is always an array
-        const normalizedProducts = data.products.map((product: Product) => ({
-          ...product,
-          imageUrls: product.imageUrls || [],
-        }));
-        setProducts(normalizedProducts);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Failed to fetch products:', error);
-        if (error instanceof TypeError) {
-          setError('Unable to connect to the server. Please check your internet connection.');
-        } else {
-          setError(error.message || 'Failed to load products. Please try again.');
-        }
-        setLoading(false);
-      });
+      fetch(`/api/products?${params}`)
+        .then((res) => {
+          if (res.status >= 500) {
+            throw new Error('Server error. Please try again later.');
+          }
+          if (!res.ok) {
+            throw new Error('Failed to fetch products. Please try again.');
+          }
+          return res.json();
+        })
+        .then((data) => {
+          // Normalize products to ensure imageUrls is always an array
+          const normalizedProducts = data.products.map((product: Product) => ({
+            ...product,
+            imageUrls: product.imageUrls || [],
+          }));
+          setProducts(normalizedProducts);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Failed to fetch products:', error);
+          if (error instanceof TypeError) {
+            setError('Unable to connect to the server. Please check your internet connection.');
+          } else {
+            setError(error.message || 'Failed to load products. Please try again.');
+          }
+          setLoading(false);
+        });
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
   }, [search, selectedCategory, selectedSubCategory]);
 
   return (
