@@ -283,8 +283,8 @@ export default function ProductPage() {
                   </h2>
                   <ul className="space-y-3">
                     {product.featureBullets.map((feature, idx) => {
-                      // Remove trailing asterisks used for footnotes
-                      const cleanFeature = feature.replace(/\*+$/g, '').trim();
+                      // Remove all asterisks used for footnotes/disclaimers
+                      const cleanFeature = feature.replace(/\*/g, '').trim();
                       return (
                         <li key={idx} className="flex items-start gap-3 group">
                           <span className="mt-1.5 h-2 w-2 rounded-full bg-primary flex-shrink-0 group-hover:scale-125 transition-transform" />
