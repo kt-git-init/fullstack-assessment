@@ -166,11 +166,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-6">
-          <h1 className="text-4xl font-bold mb-6">StackShop</h1>
+      <header className="border-b shadow-sm sticky top-0 bg-background z-10">
+        <div className="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            StackShop
+          </h1>
 
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -260,27 +262,46 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
         {error ? (
-          <div className="text-center py-12">
-            <p className="text-red-500 mb-4">{error}</p>
-            <Button
-              onClick={() => {
-                setSearch("");
-                setSelectedCategory(undefined);
-                setSelectedSubCategory(undefined);
-              }}
-            >
-              Reset Filters
-            </Button>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Card className="p-8 md:p-12 shadow-sm max-w-md">
+              <div className="text-center space-y-4">
+                <svg className="mx-auto h-16 w-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p className="text-red-500 text-base md:text-lg">{error}</p>
+                <Button
+                  onClick={() => {
+                    setSearch("");
+                    setSelectedCategory(undefined);
+                    setSelectedSubCategory(undefined);
+                  }}
+                >
+                  Reset Filters
+                </Button>
+              </div>
+            </Card>
           </div>
         ) : loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading products...</p>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Card className="p-8 md:p-12 shadow-sm">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground">Loading products...</p>
+              </div>
+            </Card>
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No products found</p>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Card className="p-8 md:p-12 shadow-sm">
+              <div className="text-center space-y-4">
+                <svg className="mx-auto h-16 w-16 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                </svg>
+                <p className="text-muted-foreground text-base md:text-lg">No products found</p>
+              </div>
+            </Card>
           </div>
         ) : (
           <>
@@ -289,27 +310,27 @@ export default function Home() {
               {Math.min(currentPage * productsPerPage, totalProducts)} of {totalProducts}{" "}
               {totalProducts === 1 ? "product" : "products"}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {products.map((product) => (
                 <Card 
                   key={product.stacklineSku} 
-                  className="h-full hover:shadow-lg transition-shadow flex flex-col cursor-pointer"
+                  className="h-full hover:shadow-lg transition-all hover:scale-[1.02] flex flex-col cursor-pointer group shadow-sm"
                   onClick={() => router.push(`/product/${product.stacklineSku}`)}
                 >
-                  <CardHeader className="p-0">
-                    <div className="relative h-48 w-full overflow-hidden rounded-t-lg bg-muted flex items-center justify-center">
+                  <CardHeader className="p-3 md:p-4">
+                    <div className="relative h-36 md:h-40 w-full">
                       {product.imageUrls && product.imageUrls[0] ? (
                         <Image
                           src={product.imageUrls[0]}
                           alt={product.title}
                           fill
-                          className="object-contain p-4"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-contain group-hover:scale-105 transition-transform"
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         />
                       ) : (
-                        <div className="text-muted-foreground">
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                           <svg
-                            className="h-16 w-16"
+                            className="h-12 md:h-16 w-12 md:w-16"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -325,14 +346,14 @@ export default function Home() {
                       )}
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-4 flex-1 flex flex-col">
-                    <CardTitle className="text-base line-clamp-2 mb-2">
+                  <CardContent className="pt-3 md:pt-4 flex-1 flex flex-col px-3 md:px-6">
+                    <CardTitle className="text-sm md:text-base line-clamp-2 mb-2 leading-tight">
                       {product.title}
                     </CardTitle>
-                    <CardDescription className="flex gap-2 flex-wrap">
+                    <CardDescription className="flex gap-1.5 md:gap-2 flex-wrap mb-3">
                       <Badge 
                         variant="secondary"
-                        className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                        className="cursor-pointer hover:bg-secondary/80 transition-colors text-xs"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -344,7 +365,7 @@ export default function Home() {
                       </Badge>
                       <Badge 
                         variant="outline"
-                        className="cursor-pointer hover:bg-accent transition-colors"
+                        className="cursor-pointer hover:bg-accent transition-colors text-xs"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -357,15 +378,15 @@ export default function Home() {
                       </Badge>
                     </CardDescription>
                     {product.retailPrice && (
-                      <p className="text-lg font-bold text-primary mt-auto">
+                      <p className="text-base md:text-lg font-bold text-primary mt-auto mb-2">
                         ${product.retailPrice.toFixed(2)}
                       </p>
                     )}
                   </CardContent>
-                  <CardFooter className="pt-0 mt-auto">
+                  <CardFooter className="pt-0 mt-auto px-3 md:px-6 pb-3 md:pb-6">
                     <Button 
                       variant="outline" 
-                      className="w-full"
+                      className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors text-xs md:text-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push(`/product/${product.stacklineSku}`);
@@ -380,15 +401,18 @@ export default function Home() {
 
             {/* Pagination */}
             {totalProducts > productsPerPage && (
-              <div className="flex justify-center items-center gap-2 mt-8">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-2 md:gap-3 mt-6 md:mt-8">
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
+                  className="w-full sm:w-auto"
                 >
-                  Previous
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
                 </Button>
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-wrap justify-center">
                   {Array.from(
                     { length: Math.ceil(totalProducts / productsPerPage) },
                     (_, i) => i + 1
@@ -402,14 +426,15 @@ export default function Home() {
                     .map((page, idx, arr) => (
                       <Fragment key={page}>
                         {idx > 0 && arr[idx - 1] !== page - 1 && (
-                          <span className="px-3 py-2">
+                          <span className="px-2 py-2 text-xs md:text-sm">
                             ...
                           </span>
                         )}
                         <Button
                           variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
                           onClick={() => setCurrentPage(page)}
-                          className="min-w-[40px]"
+                          className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
                         >
                           {page}
                         </Button>
@@ -418,12 +443,14 @@ export default function Home() {
                 </div>
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() =>
                     setCurrentPage((prev) =>
                       Math.min(Math.ceil(totalProducts / productsPerPage), prev + 1)
                     )
                   }
                   disabled={currentPage === Math.ceil(totalProducts / productsPerPage)}
+                  className="w-full sm:w-auto"
                 >
                   Next
                 </Button>
