@@ -38,7 +38,7 @@ export default function Error({
           <div>
             <h2 className="text-2xl font-bold mb-2">Something went wrong!</h2>
             <p className="text-muted-foreground">
-              We're sorry, but something unexpected happened. Please try again.
+              We&apos;re sorry, but something unexpected happened. Please try again.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

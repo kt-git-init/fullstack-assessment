@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, Fragment, Suspense } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 
 interface Product {
@@ -33,7 +32,7 @@ interface Product {
   retailPrice?: number;
 }
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
@@ -514,5 +513,28 @@ export default function Home() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background">
+        <header className="border-b shadow-sm sticky top-0 bg-background z-10">
+          <div className="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              StackShop
+            </h1>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+          <p className="text-sm text-muted-foreground mb-4">
+            <span className="inline-block h-4 w-48 bg-muted animate-pulse rounded"></span>
+          </p>
+        </main>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
