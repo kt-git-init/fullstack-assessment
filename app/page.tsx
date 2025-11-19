@@ -332,13 +332,26 @@ export default function Home() {
                     <CardDescription className="flex gap-2 flex-wrap">
                       <Badge 
                         variant="secondary"
-                        onClick={(e) => e.stopPropagation()}
+                        className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedCategory(product.categoryName);
+                          setCurrentPage(1);
+                        }}
                       >
                         {product.categoryName}
                       </Badge>
                       <Badge 
                         variant="outline"
-                        onClick={(e) => e.stopPropagation()}
+                        className="cursor-pointer hover:bg-accent transition-colors"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedCategory(product.categoryName);
+                          setSelectedSubCategory(product.subCategoryName);
+                          setCurrentPage(1);
+                        }}
                       >
                         {product.subCategoryName}
                       </Badge>
