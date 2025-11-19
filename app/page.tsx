@@ -54,13 +54,19 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Always reset subcategory when category changes
+    setSelectedSubCategory(undefined);
+    
     if (selectedCategory) {
-      fetch(`/api/subcategories`)
+      fetch(`/api/subcategories?category=${encodeURIComponent(selectedCategory)}`)
         .then((res) => res.json())
-        .then((data) => setSubCategories(data.subCategories));
+        .then((data) => setSubCategories(data.subCategories))
+        .catch((error) => {
+          console.error('Failed to fetch subcategories:', error);
+          setSubCategories([]);
+        });
     } else {
       setSubCategories([]);
-      setSelectedSubCategory(undefined);
     }
   }, [selectedCategory]);
 
