@@ -19,9 +19,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Search, ChevronDown, ChevronUp } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { CartIcon } from "@/components/cart-icon";
+import { WishlistIcon } from "@/components/wishlist-icon";
+import { useCart } from "@/contexts/cart-context";
+import { useWishlist } from "@/contexts/wishlist-context";
 
 interface Product {
   stacklineSku: string;
@@ -35,6 +42,8 @@ interface Product {
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { addToCart } = useCart();
+  const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [subCategories, setSubCategories] = useState<string[]>([]);
@@ -52,6 +61,8 @@ function HomeContent() {
   );
   const [totalProducts, setTotalProducts] = useState(0);
   const productsPerPage = 20;
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -145,12 +156,19 @@ function HomeContent() {
         })
         .then((data) => {
           // Normalize products to ensure imageUrls is always an array
-          const normalizedProducts = data.products.map((product: Product) => ({
+          let normalizedProducts = data.products.map((product: Product) => ({
             ...product,
             imageUrls: product.imageUrls || [],
           }));
+          
+          // Apply client-side price filter
+          normalizedProducts = normalizedProducts.filter((product: Product) => {
+            if (!product.retailPrice) return false;
+            return product.retailPrice >= priceRange[0] && product.retailPrice <= priceRange[1];
+          });
+          
           setProducts(normalizedProducts);
-          setTotalProducts(data.total);
+          setTotalProducts(normalizedProducts.length);
           setLoading(false);
         })
         .catch((error) => {
@@ -167,15 +185,32 @@ function HomeContent() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [search, selectedCategory, selectedSubCategory, currentPage, productsPerPage]);
+  }, [search, selectedCategory, selectedSubCategory, currentPage, productsPerPage, priceRange]);
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Skip to Content Link for Screen Readers */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+      
       <header className="border-b shadow-sm sticky top-0 bg-background z-10">
         <div className="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            StackShop
-          </h1>
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <Link href="/">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer">
+                StackShop
+              </h1>
+            </Link>
+            <div className="flex items-center gap-2">
+              <WishlistIcon />
+              <CartIcon />
+              <ThemeToggle />
+            </div>
+          </div>
 
           <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-4">
             <div className="relative flex-1">
@@ -263,16 +298,59 @@ function HomeContent() {
                   setSearch("");
                   setSelectedCategory(undefined);
                   setSelectedSubCategory(undefined);
+                  setPriceRange([0, 1000]);
                 }}
               >
                 Clear Filters
               </Button>
             )}
           </div>
+
+          {/* Advanced Filters */}
+          <div className="border-t pt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="mb-3 text-sm"
+            >
+              Advanced Filters
+              {showAdvancedFilters ? (
+                <ChevronUp className="ml-2 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-2 h-4 w-4" />
+              )}
+            </Button>
+
+            {showAdvancedFilters && (
+              <Card className="p-4 shadow-sm">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Price Range: ${priceRange[0]} - ${priceRange[1]}
+                    </label>
+                    <Slider
+                      min={0}
+                      max={1000}
+                      step={10}
+                      value={priceRange}
+                      onValueChange={(value: number[]) => setPriceRange(value as [number, number])}
+                      className="w-full"
+                      aria-label="Price range filter"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                      <span>$0</span>
+                      <span>$1000</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+      <main id="main-content" className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
         {error ? (
           <div className="flex items-center justify-center min-h-[400px]">
             <Card className="p-8 md:p-12 shadow-sm max-w-md">
@@ -432,17 +510,60 @@ function HomeContent() {
                       </p>
                     )}
                   </CardContent>
-                  <CardFooter className="pt-0 mt-auto px-3 md:px-6 pb-3 md:pb-6">
+                  <CardFooter className="pt-0 mt-auto px-3 md:px-6 pb-3 md:pb-6 gap-2">
                     <Button 
                       variant="outline" 
-                      className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors text-xs md:text-sm"
+                      size="icon"
+                      className="flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/product/${product.stacklineSku}`);
+                        if (isInWishlist(product.stacklineSku)) {
+                          removeFromWishlist(product.stacklineSku);
+                        } else {
+                          addToWishlist({
+                            stacklineSku: product.stacklineSku,
+                            title: product.title,
+                            retailPrice: product.retailPrice,
+                            imageUrl: product.imageUrls[0] || '',
+                            categoryName: product.categoryName,
+                            subCategoryName: product.subCategoryName,
+                          });
+                        }
                       }}
+                      aria-label={isInWishlist(product.stacklineSku) ? "Remove from wishlist" : "Add to wishlist"}
                     >
-                      View Details
+                      <svg
+                        className={`h-4 w-4 ${isInWishlist(product.stacklineSku) ? 'fill-current' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
+                      </svg>
                     </Button>
+                    {product.retailPrice && (
+                      <Button 
+                        variant="default" 
+                        className="flex-1 text-xs md:text-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToCart({
+                            stacklineSku: product.stacklineSku,
+                            title: product.title,
+                            retailPrice: product.retailPrice!,
+                            imageUrl: product.imageUrls[0] || '',
+                            categoryName: product.categoryName,
+                          });
+                        }}
+                      >
+                        Add to Cart
+                      </Button>
+                    )}
                   </CardFooter>
                 </Card>
               ))}
@@ -522,12 +643,21 @@ export default function Home() {
       <div className="min-h-screen bg-background">
         <header className="border-b shadow-sm sticky top-0 bg-background z-10">
           <div className="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              StackShop
-            </h1>
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <Link href="/">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity">
+                  StackShop
+                </h1>
+              </Link>
+              <div className="flex items-center gap-2">
+                <WishlistIcon />
+                <CartIcon />
+                <ThemeToggle />
+              </div>
+            </div>
           </div>
         </header>
-        <main className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+        <main id="main-content" className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
           <p className="text-sm text-muted-foreground mb-4">
             <span className="inline-block h-4 w-48 bg-muted animate-pulse rounded"></span>
           </p>

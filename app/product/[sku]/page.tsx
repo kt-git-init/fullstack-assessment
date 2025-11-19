@@ -5,9 +5,15 @@ import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { CartIcon } from '@/components/cart-icon';
+import { WishlistIcon } from '@/components/wishlist-icon';
+import { useCart } from '@/contexts/cart-context';
+import { useWishlist } from '@/contexts/wishlist-context';
+import { ImageZoom } from '@/components/image-zoom';
 
 interface Product {
   stacklineSku: string;
@@ -23,6 +29,8 @@ interface Product {
 export default function ProductPage() {
   const params = useParams();
   const sku = params.sku as string;
+  const { addToCart } = useCart();
+  const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -71,12 +79,19 @@ export default function ProductPage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-4 md:py-8 max-w-7xl">
-          <Link href="/">
-            <Button variant="ghost" className="mb-4 hover:bg-accent">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Products
-            </Button>
-          </Link>
+          <div className="flex items-center justify-between mb-4">
+            <Link href="/">
+              <Button variant="ghost" className="hover:bg-accent">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Products
+              </Button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <WishlistIcon />
+              <CartIcon />
+              <ThemeToggle />
+            </div>
+          </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Image skeleton */}
@@ -143,12 +158,15 @@ export default function ProductPage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-4 md:py-8 max-w-7xl">
-          <Link href="/">
-            <Button variant="ghost" className="mb-4 hover:bg-accent">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Products
-            </Button>
-          </Link>
+          <div className="flex items-center justify-between mb-4">
+            <Link href="/">
+              <Button variant="ghost" className="hover:bg-accent">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Products
+              </Button>
+            </Link>
+            <ThemeToggle />
+          </div>
           <Card className="p-8 md:p-12 shadow-sm">
             <div className="text-center space-y-4">
               <svg className="mx-auto h-16 w-16 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,12 +190,19 @@ export default function ProductPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-4 md:py-8 max-w-7xl">
-        <Link href="/">
-          <Button variant="ghost" className="mb-4 hover:bg-accent">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Products
-          </Button>
-        </Link>
+        <div className="flex items-center justify-between mb-4">
+          <Link href="/">
+            <Button variant="ghost" className="hover:bg-accent">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Products
+            </Button>
+          </Link>
+          <div className="flex items-center gap-2">
+            <WishlistIcon />
+            <CartIcon />
+            <ThemeToggle />
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           <div className="space-y-4">
@@ -185,16 +210,10 @@ export default function ProductPage() {
               <CardContent className="p-4 md:p-8">
                 <div className="relative h-64 md:h-80 lg:h-96 w-full">
                   {product.imageUrls && product.imageUrls[selectedImage] ? (
-                    <Image
+                    <ImageZoom
                       src={product.imageUrls[selectedImage]}
                       alt={product.title}
-                      fill
-                      className="object-contain"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 600px"
-                      priority
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
+                      className="h-full w-full"
                     />
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
@@ -264,9 +283,52 @@ export default function ProductPage() {
                 {product.retailPrice && (
                   <div className="pt-3 border-t">
                     <p className="text-sm text-muted-foreground mb-1">Price</p>
-                    <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-primary">
+                    <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-primary mb-4">
                       ${product.retailPrice.toFixed(2)}
                     </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        size="lg"
+                        className="w-full sm:w-auto sm:min-w-[200px]"
+                        onClick={() => {
+                          addToCart({
+                            stacklineSku: product.stacklineSku,
+                            title: product.title,
+                            retailPrice: product.retailPrice!,
+                            imageUrl: product.imageUrls[0] || '',
+                            categoryName: product.categoryName,
+                          });
+                        }}
+                      >
+                        <ShoppingCart className="mr-2 h-5 w-5" />
+                        Add to Cart
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="w-full sm:w-auto"
+                        onClick={() => {
+                          if (isInWishlist(product.stacklineSku)) {
+                            removeFromWishlist(product.stacklineSku);
+                          } else {
+                            addToWishlist({
+                              stacklineSku: product.stacklineSku,
+                              title: product.title,
+                              retailPrice: product.retailPrice,
+                              imageUrl: product.imageUrls[0] || '',
+                              categoryName: product.categoryName,
+                              subCategoryName: product.subCategoryName,
+                            });
+                          }
+                        }}
+                        aria-label={isInWishlist(product.stacklineSku) ? "Remove from wishlist" : "Add to wishlist"}
+                      >
+                        <Heart className={`h-5 w-5 mr-2 ${isInWishlist(product.stacklineSku) ? 'fill-current' : ''}`} />
+                        <span className="hidden sm:inline">
+                          {isInWishlist(product.stacklineSku) ? 'In Wishlist' : 'Add to Wishlist'}
+                        </span>
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>

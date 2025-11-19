@@ -1,5 +1,7 @@
 # StackShop - Bug Fixes & Improvements Documentation
 
+**Author:** Kunal Tajne
+
 ## Overview
 
 This document outlines all **32 bugs** identified and fixed, plus **8 major enhancements** made to the StackShop eCommerce application. All improvements focus on security, performance, accessibility, mobile responsiveness, and user experience.
@@ -7,9 +9,9 @@ This document outlines all **32 bugs** identified and fixed, plus **8 major enha
 ## Quick Stats
 
 - **Total Bugs Fixed**: 32
-- **Major Enhancements**: 8
-- **Files Modified**: 10
-- **Files Created**: 3 (product detail page, error boundary, security audit)
+- **Major Enhancements**: 15
+- **Files Modified**: 15
+- **Files Created**: 12 (product detail page, error boundary, theme provider, theme toggle, cart context, wishlist context, cart page, wishlist page, cart icon, wishlist icon, image zoom, slider component)
 - **Lines of Code Changed**: ~2,500+
 - **Testing Scenarios**: 50+
 - **Responsive Breakpoints**: 4 (mobile, tablet, laptop, desktop)
@@ -1274,26 +1276,484 @@ useEffect(() => {
 
 ---
 
+### 9. **Shopping Cart Functionality with Local Storage**
+
+**Enhancement:**
+- Implemented full shopping cart system with persistent storage
+- Cart state managed via React Context API
+- Add to cart functionality on product listings and detail pages
+- Cart icon in header with item count badge
+- Dedicated shopping cart page with full management features
+- Quantity adjustment controls (increase/decrease)
+- Individual item removal and clear all functionality
+- Real-time price calculation and order summary
+- Demo checkout flow
+
+**Implementation:**
+```typescript
+// Cart Context (contexts/cart-context.tsx)
+export interface CartItem {
+  stacklineSku: string;
+  title: string;
+  retailPrice: number;
+  imageUrl: string;
+  quantity: number;
+  categoryName: string;
+}
+
+export function CartProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<CartItem[]>([]);
+  
+  // Load from localStorage on mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem('shopping-cart');
+    if (savedCart) {
+      setItems(JSON.parse(savedCart));
+    }
+  }, []);
+
+  // Save to localStorage on changes
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('shopping-cart', JSON.stringify(items));
+    }
+  }, [items, isLoaded]);
+  
+  // Cart management functions
+  const addToCart = (item: Omit<CartItem, 'quantity'>) => { /* ... */ };
+  const removeFromCart = (sku: string) => { /* ... */ };
+  const updateQuantity = (sku: string, quantity: number) => { /* ... */ };
+  const clearCart = () => { /* ... */ };
+  const getTotalItems = () => { /* ... */ };
+  const getTotalPrice = () => { /* ... */ };
+  
+  return <CartContext.Provider value={{ /* ... */ }}>{children}</CartContext.Provider>;
+}
+```
+
+**Features:**
+- **Persistent Storage**: Cart survives page refreshes using localStorage
+- **Smart Quantity Management**: Automatically increments if item already in cart
+- **Real-time Updates**: Cart icon badge updates immediately
+- **Empty State Handling**: Friendly message when cart is empty
+- **Responsive Design**: Mobile-optimized cart interface
+- **Price Calculations**: Automatic subtotal and total calculations
+- **Free Shipping**: Built-in free shipping indicator
+
+**Why This Improves UX:**
+- Essential eCommerce functionality
+- Users can add items without losing progress
+- Familiar shopping cart patterns (Amazon, etc.)
+- Clear visual feedback for all actions
+- Professional checkout experience
+
+---
+
+### 10. **Wishlist Feature with Local Storage**
+
+**Enhancement:**
+- Complete wishlist system with persistent storage
+- One-click add/remove from wishlist
+- Heart icon fills when item is in wishlist
+- Dedicated wishlist page
+- Quick add to cart from wishlist
+- Wishlist count badge in header
+- Local storage persistence
+
+**Implementation:**
+```typescript
+// Wishlist Context (contexts/wishlist-context.tsx)
+export interface WishlistItem {
+  stacklineSku: string;
+  title: string;
+  retailPrice?: number;
+  imageUrl: string;
+  categoryName: string;
+  subCategoryName: string;
+}
+
+export function WishlistProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<WishlistItem[]>([]);
+  
+  // Persistent storage with localStorage
+  useEffect(() => {
+    const savedWishlist = localStorage.getItem('wishlist');
+    if (savedWishlist) {
+      setItems(JSON.parse(savedWishlist));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('wishlist', JSON.stringify(items));
+    }
+  }, [items, isLoaded]);
+  
+  // Wishlist management
+  const addToWishlist = (item: WishlistItem) => { /* ... */ };
+  const removeFromWishlist = (sku: string) => { /* ... */ };
+  const isInWishlist = (sku: string) => { /* ... */ };
+  
+  return <WishlistContext.Provider value={{ /* ... */ }}>{children}</WishlistContext.Provider>;
+}
+```
+
+**Features:**
+- **Visual Feedback**: Heart icon changes state (filled/unfilled)
+- **Persistent Across Sessions**: Uses localStorage
+- **Quick Actions**: Add to cart directly from wishlist
+- **Remove on Hover**: Convenient X button appears on hover
+- **Count Badge**: Shows number of wishlist items in header
+- **Empty State**: Friendly message when wishlist is empty
+
+**Why This Improves UX:**
+- Save items for later without committing to purchase
+- Browse and compare saved items easily
+- Industry-standard feature (Amazon, eBay, etc.)
+- Reduces friction in purchase decision process
+- Encourages return visits
+
+---
+
+### 11. **Image Zoom on Hover**
+
+**Enhancement:**
+- Interactive image zoom on product detail pages
+- Smooth magnification on mouse hover
+- Follows mouse cursor for detailed inspection
+- 150% zoom level for optimal viewing
+- Smooth transitions with CSS transforms
+
+**Implementation:**
+```typescript
+// Image Zoom Component (components/image-zoom.tsx)
+export function ImageZoom({ src, alt, className }: ImageZoomProps) {
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = imageRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setPosition({ x, y });
+  };
+
+  return (
+    <div
+      className="relative overflow-hidden cursor-zoom-in"
+      onMouseEnter={() => setIsZoomed(true)}
+      onMouseLeave={() => setIsZoomed(false)}
+      onMouseMove={handleMouseMove}
+    >
+      <Image
+        className={`transition-transform ${isZoomed ? 'scale-150' : 'scale-100'}`}
+        style={isZoomed ? { transformOrigin: `${position.x}% ${position.y}%` } : undefined}
+      />
+    </div>
+  );
+}
+```
+
+**Features:**
+- **Cursor-Following Zoom**: Zoom follows mouse position
+- **Smooth Animations**: CSS transitions for polished feel
+- **No Popup Required**: Zoom happens in place
+- **Performance Optimized**: Uses CSS transforms (GPU-accelerated)
+- **Accessible**: Maintains alt text and semantic HTML
+
+**Why This Improves UX:**
+- Helps users inspect product details
+- Standard feature on major eCommerce sites
+- Improves confidence in purchase decisions
+- Better than static images alone
+- Professional, polished interaction
+
+---
+
+### 12. **Advanced Filters (Price Range)**
+
+**Enhancement:**
+- Price range slider filter with dual handles
+- Real-time filtering as slider moves
+- Collapsible "Advanced Filters" section
+- Price range display ($0 - $1000)
+- Visual feedback with Radix UI Slider component
+- Integrates with existing category filters
+
+**Implementation:**
+```typescript
+// Price Range Filter in Home Page
+const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+// Client-side price filtering
+normalizedProducts = normalizedProducts.filter((product: Product) => {
+  if (!product.retailPrice) return false;
+  return product.retailPrice >= priceRange[0] && product.retailPrice <= priceRange[1];
+});
+
+// UI Component
+<Slider
+  min={0}
+  max={1000}
+  step={10}
+  value={priceRange}
+  onValueChange={(value) => setPriceRange(value as [number, number])}
+  aria-label="Price range filter"
+/>
+```
+
+**Features:**
+- **Dual-Handle Slider**: Set minimum and maximum price
+- **Real-time Updates**: Products filter as you slide
+- **Collapsible Section**: Keeps UI clean when not in use
+- **Clear Price Display**: Shows current range selection
+- **Accessible**: Proper ARIA labels and keyboard support
+- **Integrates with Other Filters**: Works alongside category/search
+
+**Why This Improves UX:**
+- Essential for budget-conscious shopping
+- Reduces time to find products in price range
+- Industry standard feature
+- Visual, intuitive control
+- Better than typing prices manually
+
+---
+
+### 13. **Skip to Content Link for Accessibility**
+
+**Enhancement:**
+- Screen reader accessible skip link
+- Appears on keyboard focus (Tab key)
+- Jumps directly to main content area
+- Bypasses navigation and header
+- Meets WCAG 2.1 Level A requirements
+- Styled for visibility when focused
+
+**Implementation:**
+```typescript
+// Skip Link in Home Page
+<a
+  href="#main-content"
+  className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded focus:shadow-lg"
+>
+  Skip to main content
+</a>
+
+<main id="main-content" className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+  {/* Main content */}
+</main>
+```
+
+**Features:**
+- **Keyboard Accessible**: Only visible when focused via Tab
+- **Screen Reader Compatible**: Works with all major screen readers
+- **High Visibility**: Clear styling when focused
+- **Proper Z-Index**: Appears above all other content
+- **Semantic HTML**: Uses native anchor element
+- **WCAG Compliant**: Meets accessibility standards
+
+**Why This Improves UX:**
+- Critical for keyboard-only users
+- Speeds up navigation for screen reader users
+- Legal requirement in many jurisdictions (ADA, Section 508)
+- Shows commitment to accessibility
+- Minimal implementation cost, huge benefit
+- Best practice for all websites
+
+---
+
+### 14. **Enhanced Product Cards with Quick Actions**
+
+**Enhancement:**
+- Added wishlist button to each product card
+- Add to cart button directly from listings
+- Heart icon shows wishlist state
+- Buttons appear in card footer
+- Responsive button sizing
+- Clear visual feedback
+
+**Features:**
+- **Quick Wishlist Toggle**: Heart button with fill state
+- **Direct Add to Cart**: No need to visit product page
+- **Hover Effects**: Buttons respond to hover
+- **Icon + Text**: Clear action labels
+- **Stop Propagation**: Buttons don't trigger card click
+- **Accessible**: Proper ARIA labels
+
+**Why This Improves UX:**
+- Reduces clicks to add items
+- Faster shopping experience
+- Common pattern on major sites
+- Clear visual feedback
+- Streamlined workflow
+
+---
+
+### 15. **Integrated Header Navigation**
+
+**Enhancement:**
+- Cart icon with item count badge
+- Wishlist icon with item count badge
+- Theme toggle for dark/light mode
+- All icons in consistent header layout
+- Responsive header design
+- Badge styling for counts
+
+**Features:**
+- **Real-time Badges**: Update immediately when items added
+- **Clickable Icons**: Navigate to cart/wishlist pages
+- **9+ Display**: Shows "9+" for 10 or more items
+- **Consistent Styling**: Matches design system
+- **Responsive**: Adjusts for mobile screens
+- **Accessible**: Proper labels and roles
+
+**Why This Improves UX:**
+- Quick access to key features
+- Visual feedback for actions
+- Industry-standard placement
+- Reduces navigation friction
+- Professional appearance
+
+---
+
+### 16. **Dark Mode Support**
+
+**Enhancement:**
+- Implemented complete dark mode theme switching using `next-themes`
+- Added theme toggle button with sun/moon icons on all pages
+- System preference detection (automatically matches OS dark/light mode)
+- Persistent theme preference stored in localStorage
+- Smooth theme transitions without page reload
+- Pre-configured dark mode color schemes in Tailwind CSS
+
+**Implementation:**
+```typescript
+// Theme Provider (components/theme-provider.tsx)
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+
+export function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextThemesProvider>) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+}
+
+// Theme Toggle (components/theme-toggle.tsx)
+export function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+    >
+      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </Button>
+  );
+}
+
+// Root Layout Integration (app/layout.tsx)
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+**Dark Mode Color Scheme:**
+```css
+.dark {
+  --background: oklch(0.145 0 0);        /* Dark grey background */
+  --foreground: oklch(0.985 0 0);        /* Light text */
+  --card: oklch(0.205 0 0);              /* Slightly lighter cards */
+  --primary: oklch(0.922 0 0);           /* Light primary color */
+  --muted: oklch(0.269 0 0);             /* Muted elements */
+  --border: oklch(1 0 0 / 10%);          /* Subtle borders */
+  /* ...and more */
+}
+```
+
+**Features:**
+- **System Detection**: Automatically detects and uses OS dark/light mode preference
+- **Manual Override**: Toggle button allows users to choose their preference
+- **Persistent**: Theme choice saved in localStorage and persists across sessions
+- **No Flash**: `suppressHydrationWarning` prevents theme flash on page load
+- **Instant Toggle**: Theme changes apply immediately without page reload
+- **Accessible**: Toggle button includes proper ARIA labels and keyboard support
+- **Responsive**: Theme toggle positioned appropriately on all screen sizes
+
+**Placement:**
+- Homepage header (next to StackShop title)
+- Product detail page (next to Back to Products button)
+- Consistent position across all pages
+
+**Why This Improves UX:**
+- **User Preference**: Respects user's preferred color scheme
+- **Reduced Eye Strain**: Dark mode reduces eye strain in low-light environments
+- **Modern Standard**: Expected feature in modern web applications
+- **Accessibility**: Better for users with light sensitivity
+- **Battery Savings**: Dark pixels use less energy on OLED screens
+- **Professional**: Matches features found in major eCommerce platforms
+
+**Technical Benefits:**
+- Uses industry-standard `next-themes` library (29k+ GitHub stars)
+- Prevents hydration mismatches with proper SSR handling
+- Minimal bundle size impact (~3KB gzipped)
+- TypeScript support with full type safety
+- Works seamlessly with Tailwind CSS v4
+- No layout shift during theme transitions
+
+---
+
 ## Technical Architecture
 
 ### File Structure Changes
 
 ```
 app/
+├── cart/
+│   └── page.tsx              # New: Shopping cart page with full management
+├── wishlist/
+│   └── page.tsx              # New: Wishlist page with saved items
 ├── product/
 │   ├── [sku]/
-│   │   └── page.tsx          # New dynamic route for product details
+│   │   └── page.tsx          # Updated: Added cart/wishlist buttons, image zoom
 │   └── page.tsx              # Redirect page for invalid routes
-├── error.tsx                 # New: Global error boundary
-├── layout.tsx                # Updated: Better metadata
-└── page.tsx                  # Enhanced: Product listing with all filters
+├── error.tsx                 # Global error boundary
+├── layout.tsx                # Updated: Added CartProvider, WishlistProvider
+└── page.tsx                  # Enhanced: Cart/wishlist integration, price filter, skip link
+
+components/
+├── ui/
+│   ├── slider.tsx            # New: Price range slider component
+│   └── ...                   # Other shadcn/ui components
+├── cart-icon.tsx             # New: Cart icon with item count badge
+├── wishlist-icon.tsx         # New: Wishlist icon with item count badge
+├── image-zoom.tsx            # New: Interactive image zoom on hover
+├── theme-provider.tsx        # Theme context provider for dark mode
+└── theme-toggle.tsx          # Dark/light mode toggle button
+
+contexts/
+├── cart-context.tsx          # New: Shopping cart state management with localStorage
+└── wishlist-context.tsx      # New: Wishlist state management with localStorage
 
 lib/
 └── products.ts               # Updated: Added retailPrice to interface
 
 next.config.ts                # Enhanced: Image hosts, security headers, tracing
 
-SECURITY_AUDIT.md             # New: Comprehensive security audit documentation
+package.json                  # Updated: Added @radix-ui/react-slider dependency
 ```
 
 ### API Endpoints Used
@@ -1310,18 +1770,59 @@ SECURITY_AUDIT.md             # New: Comprehensive security audit documentation
 ```bash
 # Install dependencies
 yarn install
+# or
+npm install
 
 # Run development server
 yarn dev
+# or
+npm run dev
 
 # Build for production
 yarn build
+# or
+npm run build
 
 # Start production server
 yarn start
+# or
+npm start
 ```
 
 Visit [http://localhost:3000](http://localhost:3000) to view the application.
+
+## Key Features
+
+### Shopping & Commerce
+- **Shopping Cart**: Add items to cart, manage quantities, view total price
+- **Wishlist**: Save items for later, persistent across sessions
+- **Price Filtering**: Filter products by price range ($0-$1000)
+- **Quick Actions**: Add to cart/wishlist directly from product listings
+
+### User Experience
+- **Image Zoom**: Hover over product images for detailed view (150% zoom)
+- **Dark Mode**: Toggle between light and dark themes (syncs with system preferences)
+- **Skip to Content**: Keyboard-accessible link for screen readers
+- **Advanced Filters**: Collapsible filter section with price range slider
+
+### Product Browsing
+- **Search**: Global search across all products with 300ms debounce
+- **Category Filters**: Filter by category and subcategory
+- **Pagination**: Navigate through products with page numbers
+- **URL State**: Bookmarkable filters and pagination in URL
+
+### Accessibility
+- **WCAG 2.1 Compliant**: Screen reader support, keyboard navigation
+- **ARIA Labels**: All interactive elements properly labeled
+- **Focus Management**: Clear focus indicators throughout
+- **Skip Links**: Quick navigation for keyboard users
+
+### Technical Features
+- **Persistent Storage**: Cart and wishlist saved to localStorage
+- **Real-time Updates**: Instant badge updates when adding items
+- **Responsive Design**: Mobile-first design for all screen sizes
+- **Error Handling**: Graceful error states with recovery options
+- **Security Headers**: X-Frame-Options, CSP, and more
 
 ---
 
@@ -1416,6 +1917,60 @@ To verify all fixes are working:
     - Check "Key Features" section
     - Verify no asterisks appear in feature text
 
+16. **Dark Mode**:
+    - Click the sun/moon toggle button in the header
+    - Verify theme switches smoothly without page reload
+    - Check all colors adjust appropriately
+    - Verify toggle button icon changes (sun ↔ moon)
+    - Refresh page - theme preference should persist
+    - Test on different pages (home, product detail)
+    - Change OS system theme and reload - should match system preference by default
+
+17. **Shopping Cart**:
+    - Add items to cart from product listings
+    - Add items from product detail page
+    - Verify cart icon badge updates with item count
+    - Navigate to cart page
+    - Test quantity increase/decrease controls
+    - Remove individual items
+    - Test "Clear All" functionality
+    - Verify price calculations are correct
+    - Test checkout demo flow
+    - Refresh page - cart should persist
+
+18. **Wishlist**:
+    - Click heart icon on product cards
+    - Verify heart fills when item added
+    - Check wishlist icon badge in header
+    - Navigate to wishlist page
+    - Test "Add to Cart" from wishlist
+    - Remove items from wishlist
+    - Test "Clear All" functionality
+    - Refresh page - wishlist should persist
+
+19. **Image Zoom**:
+    - Navigate to any product detail page
+    - Hover over main product image
+    - Verify image zooms to 150%
+    - Move mouse around - zoom should follow cursor
+    - Move mouse away - image should return to normal
+    - Test on multiple products
+
+20. **Price Range Filter**:
+    - Click "Advanced Filters" on home page
+    - Adjust price range slider
+    - Verify products filter in real-time
+    - Check price range display updates
+    - Combine with category filters
+    - Verify "Clear Filters" resets price range
+
+21. **Skip to Content Link**:
+    - On home page, press Tab key
+    - Verify "Skip to main content" link appears
+    - Press Enter on the link
+    - Verify page scrolls to main content area
+    - Test with screen reader (VoiceOver on Mac, NVDA on Windows)
+
 ---
 
 ## Performance Improvements
@@ -1480,27 +2035,27 @@ To verify all fixes are working:
 
 While not implemented in this assessment, here are additional improvements to consider:
 
-1. **Add to Cart Functionality** with shopping cart
-2. **Product Sorting** (price, name, rating, newest)
-3. **Advanced Filters** (price range, brand, ratings)
-4. **Wishlist Feature** with local storage
-5. **Product Reviews & Ratings** system
-6. **Image Zoom on Hover** for product images
-7. **Recently Viewed Products** tracking
-8. **Search Suggestions/Autocomplete**
-9. **Product Comparison** feature
-10. **Analytics Integration** (Google Analytics, Mixpanel)
-11. **Rate Limiting** on API endpoints
-12. **Shared Types File** for TypeScript interfaces
-13. **Skip to Content Link** for screen readers
-14. **Unit and Integration Tests** (Jest, Testing Library)
-15. **End-to-End Tests** (Playwright, Cypress)
+1. **Product Sorting** (price, rating, newest, popularity)
+2. **Product Reviews & Ratings** system with user feedback
+3. **Recently Viewed Products** tracking with localStorage
+4. **Search Suggestions/Autocomplete** with debounced API
+5. **Product Comparison** feature (side-by-side)
+6. **Analytics Integration** (Google Analytics, Mixpanel, Segment)
+7. **Rate Limiting** on API endpoints to prevent abuse
+8. **Shared Types File** for TypeScript interfaces
+9. **Unit and Integration Tests** (Jest, Testing Library, Vitest)
+10. **End-to-End Tests** (Playwright, Cypress)
+11. **Payment Integration** (Stripe, PayPal)
+12. **User Authentication** (Auth0, Clerk, NextAuth)
+13. **Order History** and tracking
+14. **Email Notifications** for orders
+15. **Inventory Management** system
 
 ---
 
 ## Summary
 
-This project identified and fixed **32 bugs** and added **8 major enhancements** including:
+This project identified and fixed **32 bugs** and added **15 major enhancements** including:
 
 ### Bugs Fixed:
 - **4 Critical Production-Breaking Issues**: Image config, URL injection, missing imageUrls, missing security headers
@@ -1518,6 +2073,13 @@ This project identified and fixed **32 bugs** and added **8 major enhancements**
 6. **Global Error Boundary** - Graceful error handling throughout app
 7. **Input Validation** - Frontend and backend validation for all inputs
 8. **Accessibility Improvements** - ARIA labels, keyboard navigation, WCAG 2.1 compliance
+9. **Dark Mode Support** - Full theme switching with system preference detection and persistence
+10. **Shopping Cart System** - Full cart functionality with localStorage persistence
+11. **Wishlist Feature** - Save items for later with localStorage persistence
+12. **Image Zoom on Hover** - Interactive product image magnification
+13. **Advanced Price Filtering** - Slider-based price range filter
+14. **Skip to Content Link** - Accessibility feature for keyboard users
+15. **Quick Action Buttons** - Cart/wishlist buttons on product cards
 
 ### Cross-Device Optimization:
 - **Mobile** (375px-640px): Touch-friendly, stacked layouts, optimized images
@@ -1529,27 +2091,17 @@ All fixes follow industry best practices and improve:
 - **Security**: Safe routing, input validation, security headers, error boundaries
 - **Performance**: Debounced search, optimized images, efficient API calls
 - **UX**: Clear feedback, intuitive navigation, skeleton loaders, responsive design
-- **Accessibility**: ARIA labels, keyboard navigation, WCAG 2.1 compliance
+- **Accessibility**: ARIA labels, keyboard navigation, WCAG 2.1 compliance, skip links
 - **Maintainability**: Clean code, proper error handling, type safety
 - **Mobile Experience**: Touch-friendly, sticky header, optimized layouts
 - **Professional Design**: Animations, transitions, modern appearance
+- **Commerce Features**: Shopping cart, wishlist, price filtering, quick actions
+- **Persistent Storage**: Cart and wishlist survive page refreshes
+- **Interactive Features**: Image zoom, collapsible filters, real-time updates
 
 ---
 
 ## Developer Notes
-
-**Time Spent**: ~4 hours
-- 2 hours: Initial bug fixes (27 bugs + 5 enhancements from IMPLEMENTATION_GUIDE.md)
-- 1 hour: Security audit and critical fixes
-- 1 hour: Skeleton loaders, accessibility improvements, final polish
-
-**Approach**: 
-1. Systematic review of IMPLEMENTATION_GUIDE.md
-2. Git commit and push for each bug fix individually
-3. Comprehensive security and code quality audit
-4. Implementation of critical security and accessibility fixes
-5. UX improvements (skeleton loaders, data cleaning)
-6. Testing across multiple devices and scenarios
 
 **Prioritization Framework:**
 1. **Security** → Protect users and data
@@ -1567,7 +2119,7 @@ All fixes follow industry best practices and improve:
 - Cross-browser testing (Chrome, Firefox, Safari)
 
 **Key Achievements:**
-- Fixed all production-breaking bugs
+- Fixed production-breaking bugs
 - Implemented comprehensive security measures
 - Added full accessibility support
 - Created modern, responsive design
@@ -1592,6 +2144,6 @@ The systematic approach of:
 
 ---
 
-**Built with:** Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui
+**Built with:** Next.js 15, React 19, TypeScript, Tailwind CSS v4, shadcn/ui, next-themes
 
 **Last Updated:** November 19, 2025
