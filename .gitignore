@@ -24,11 +24,6 @@
 .DS_Store
 *.pem
 
-# documentation
-IMPLEMENTATION_GUIDE.md
-README_old.md
-SECURITY_AUDIT.md
-
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -20,7 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, ChevronDown, ChevronUp } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -61,8 +60,11 @@ function HomeContent() {
   );
   const [totalProducts, setTotalProducts] = useState(0);
   const productsPerPage = 20;
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+  const [priceFromInput, setPriceFromInput] = useState<string>("0");
+  const [priceToInput, setPriceToInput] = useState<string>("10000");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [isPriceFilterActive, setIsPriceFilterActive] = useState(false);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -131,13 +133,15 @@ function HomeContent() {
       setError(null);
       const params = new URLSearchParams();
 
-      // When searching, search globally across all products (ignore category filters)
-      if (search) {
-        params.append("search", search);
-        params.append("limit", "1000"); // Higher limit for search to cover full dataset
+      // When searching or price filtering, fetch all products for client-side filtering
+      if (search || isPriceFilterActive) {
+        if (search) params.append("search", search);
+        if (selectedCategory) params.append("category", selectedCategory);
+        if (selectedSubCategory) params.append("subCategory", selectedSubCategory);
+        params.append("limit", "100"); // Higher limit for client-side filtering
         params.append("offset", "0");
       } else {
-        // When not searching, use category filters and pagination
+        // When not searching or filtering, use server-side pagination
         if (selectedCategory) params.append("category", selectedCategory);
         if (selectedSubCategory) params.append("subCategory", selectedSubCategory);
         params.append("limit", productsPerPage.toString());
@@ -161,14 +165,33 @@ function HomeContent() {
             imageUrls: product.imageUrls || [],
           }));
           
-          // Apply client-side price filter
-          normalizedProducts = normalizedProducts.filter((product: Product) => {
-            if (!product.retailPrice) return false;
-            return product.retailPrice >= priceRange[0] && product.retailPrice <= priceRange[1];
-          });
+          // Apply client-side price filter only if user has actively changed it
+          if (isPriceFilterActive) {
+            normalizedProducts = normalizedProducts.filter((product: Product) => {
+              if (!product.retailPrice) return false;
+              // If max price is very high (indicating "no limit"), only check minimum
+              if (priceRange[1] >= 50000) {
+                return product.retailPrice >= priceRange[0];
+              }
+              return product.retailPrice >= priceRange[0] && product.retailPrice <= priceRange[1];
+            });
+            // Client-side pagination when filtering
+            const startIndex = (currentPage - 1) * productsPerPage;
+            const paginatedProducts = normalizedProducts.slice(startIndex, startIndex + productsPerPage);
+            setProducts(paginatedProducts);
+            setTotalProducts(normalizedProducts.length);
+          } else if (search) {
+            // Client-side pagination for search results
+            const startIndex = (currentPage - 1) * productsPerPage;
+            const paginatedProducts = normalizedProducts.slice(startIndex, startIndex + productsPerPage);
+            setProducts(paginatedProducts);
+            setTotalProducts(normalizedProducts.length);
+          } else {
+            // Server-side pagination
+            setProducts(normalizedProducts);
+            setTotalProducts(data.total || normalizedProducts.length);
+          }
           
-          setProducts(normalizedProducts);
-          setTotalProducts(normalizedProducts.length);
           setLoading(false);
         })
         .catch((error) => {
@@ -185,7 +208,7 @@ function HomeContent() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [search, selectedCategory, selectedSubCategory, currentPage, productsPerPage, priceRange]);
+  }, [search, selectedCategory, selectedSubCategory, currentPage, productsPerPage, priceRange, isPriceFilterActive]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -200,11 +223,21 @@ function HomeContent() {
       <header className="border-b shadow-sm sticky top-0 bg-background z-10">
         <div className="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
           <div className="flex items-center justify-between mb-4 md:mb-6">
-            <Link href="/">
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer">
-                StackShop
-              </h1>
-            </Link>
+            <h1 
+              className="text-2xl md:text-3xl lg:text-4xl font-bold cursor-pointer hover:opacity-80 transition-opacity text-foreground dark:bg-gradient-to-r dark:from-primary dark:to-primary/60 dark:bg-clip-text dark:text-transparent"
+              onClick={() => {
+                setSearch("");
+                setSelectedCategory(undefined);
+                setSelectedSubCategory(undefined);
+                setPriceRange([0, 10000]);
+                setPriceFromInput("0");
+                setPriceToInput("10000");
+                setIsPriceFilterActive(false);
+                setCurrentPage(1);
+              }}
+            >
+              StackShop
+            </h1>
             <div className="flex items-center gap-2">
               <WishlistIcon />
               <CartIcon />
@@ -298,7 +331,10 @@ function HomeContent() {
                   setSearch("");
                   setSelectedCategory(undefined);
                   setSelectedSubCategory(undefined);
-                  setPriceRange([0, 1000]);
+                  setPriceRange([0, 10000]);
+                  setPriceFromInput("0");
+                  setPriceToInput("10000");
+                  setIsPriceFilterActive(false);
                 }}
               >
                 Clear Filters
@@ -323,24 +359,117 @@ function HomeContent() {
             </Button>
 
             {showAdvancedFilters && (
-              <Card className="p-4 shadow-sm">
+              <Card className="p-6 shadow-sm bg-card">
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Price Range: ${priceRange[0]} - ${priceRange[1]}
+                    <label className="text-sm font-semibold mb-4 block text-foreground">
+                      Price Range
                     </label>
-                    <Slider
-                      min={0}
-                      max={1000}
-                      step={10}
-                      value={priceRange}
-                      onValueChange={(value: number[]) => setPriceRange(value as [number, number])}
-                      className="w-full"
-                      aria-label="Price range filter"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>$0</span>
-                      <span>$1000</span>
+                    <div className="flex items-end gap-4">
+                      <div className="flex-1 space-y-2">
+                        <label htmlFor="price-from" className="text-xs font-medium text-muted-foreground">
+                          Minimum Price
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            $
+                          </span>
+                          <Input
+                            id="price-from"
+                            type="number"
+                            min={0}
+                            max={priceRange[1]}
+                            value={priceFromInput}
+                            onChange={(e) => {
+                              const inputValue = e.target.value;
+                              setPriceFromInput(inputValue);
+                              // Empty value means 0 (no minimum)
+                              const numValue = inputValue === "" ? 0 : Math.max(0, parseInt(inputValue));
+                              if (inputValue === "" || !isNaN(numValue)) {
+                                setPriceRange([numValue, priceRange[1]]);
+                                setIsPriceFilterActive(true);
+                              }
+                            }}
+                            onBlur={() => {
+                              // If empty, set to 0
+                              if (priceFromInput === "") {
+                                setPriceFromInput("0");
+                                setPriceRange([0, priceRange[1]]);
+                              } else {
+                                const numValue = Math.max(0, parseInt(priceFromInput) || 0);
+                                setPriceFromInput(numValue.toString());
+                              }
+                            }}
+                            className="pl-7 h-11"
+                            placeholder="0"
+                            aria-label="Minimum price"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 text-muted-foreground pb-3 font-medium">
+                        to
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <label htmlFor="price-to" className="text-xs font-medium text-muted-foreground">
+                          Maximum Price
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            $
+                          </span>
+                          <Input
+                            id="price-to"
+                            type="number"
+                            min={priceRange[0]}
+                            max={100000}
+                            value={priceToInput}
+                            onChange={(e) => {
+                              const inputValue = e.target.value;
+                              setPriceToInput(inputValue);
+                              // Empty value means "no maximum limit" - use a very high number
+                              const numValue = inputValue === "" ? 999999 : Math.max(priceRange[0], parseInt(inputValue));
+                              if (inputValue === "" || !isNaN(numValue)) {
+                                setPriceRange([priceRange[0], numValue]);
+                                setIsPriceFilterActive(true);
+                              }
+                            }}
+                            onBlur={() => {
+                              // If empty, leave it empty to indicate "no limit"
+                              if (priceToInput === "") {
+                                setPriceRange([priceRange[0], 999999]);
+                              } else {
+                                const numValue = Math.max(priceRange[0], parseInt(priceToInput) || 10000);
+                                setPriceToInput(numValue.toString());
+                              }
+                            }}
+                            className="pl-7 h-11"
+                            placeholder="No limit"
+                            aria-label="Maximum price"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+                      <span>
+                        {priceRange[1] >= 50000 
+                          ? `Showing products $${priceRange[0]} and above`
+                          : `Showing products from $${priceRange[0]} to $${priceRange[1]}`
+                        }
+                        {priceToInput === "" && " (no maximum limit)"}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setPriceRange([0, 10000]);
+                          setPriceFromInput("0");
+                          setPriceToInput("10000");
+                          setIsPriceFilterActive(false);
+                        }}
+                        className="h-7 text-xs"
+                      >
+                        Reset
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -364,6 +493,10 @@ function HomeContent() {
                     setSearch("");
                     setSelectedCategory(undefined);
                     setSelectedSubCategory(undefined);
+                    setPriceRange([0, 10000]);
+                    setPriceFromInput("0");
+                    setPriceToInput("10000");
+                    setIsPriceFilterActive(false);
                   }}
                 >
                   Reset Filters
@@ -645,7 +778,7 @@ export default function Home() {
           <div className="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
             <div className="flex items-center justify-between mb-4 md:mb-6">
               <Link href="/">
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold cursor-pointer hover:opacity-80 transition-opacity text-foreground dark:bg-gradient-to-r dark:from-primary dark:to-primary/60 dark:bg-clip-text dark:text-transparent">
                   StackShop
                 </h1>
               </Link>

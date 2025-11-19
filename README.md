@@ -11,7 +11,7 @@ This document outlines all **32 bugs** identified and fixed, plus **8 major enha
 - **Total Bugs Fixed**: 32
 - **Major Enhancements**: 15
 - **Files Modified**: 15
-- **Files Created**: 12 (product detail page, error boundary, theme provider, theme toggle, cart context, wishlist context, cart page, wishlist page, cart icon, wishlist icon, image zoom, slider component)
+- **Files Created**: 12 (product detail page, error boundary, theme provider, theme toggle, cart context, wishlist context, cart page, wishlist page, cart icon, wishlist icon, image zoom)
 - **Lines of Code Changed**: ~2,500+
 - **Testing Scenarios**: 50+
 - **Responsive Breakpoints**: 4 (mobile, tablet, laptop, desktop)
@@ -1473,17 +1473,19 @@ export function ImageZoom({ src, alt, className }: ImageZoomProps) {
 ### 12. **Advanced Filters (Price Range)**
 
 **Enhancement:**
-- Price range slider filter with dual handles
-- Real-time filtering as slider moves
+- Price range filter with "From" and "To" input fields
+- Real-time filtering as values change
 - Collapsible "Advanced Filters" section
-- Price range display ($0 - $1000)
-- Visual feedback with Radix UI Slider component
+- Price range display with dollar sign prefixes
+- Quick reset button for default values
 - Integrates with existing category filters
 
 **Implementation:**
 ```typescript
 // Price Range Filter in Home Page
 const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+const [priceFromInput, setPriceFromInput] = useState<string>("0");
+const [priceToInput, setPriceToInput] = useState<string>("1000");
 const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
 // Client-side price filtering
@@ -1492,31 +1494,38 @@ normalizedProducts = normalizedProducts.filter((product: Product) => {
   return product.retailPrice >= priceRange[0] && product.retailPrice <= priceRange[1];
 });
 
-// UI Component
-<Slider
-  min={0}
-  max={1000}
-  step={10}
-  value={priceRange}
-  onValueChange={(value) => setPriceRange(value as [number, number])}
-  aria-label="Price range filter"
+// UI Component with "From" and "To" inputs
+<Input
+  id="price-from"
+  type="number"
+  value={priceFromInput}
+  onChange={(e) => {
+    const inputValue = e.target.value;
+    setPriceFromInput(inputValue);
+    const numValue = inputValue === "" ? 0 : Math.max(0, parseInt(inputValue));
+    if (!isNaN(numValue)) {
+      setPriceRange([numValue, priceRange[1]]);
+    }
+  }}
+  aria-label="Minimum price"
 />
 ```
 
 **Features:**
-- **Dual-Handle Slider**: Set minimum and maximum price
-- **Real-time Updates**: Products filter as you slide
+- **From/To Input Fields**: Precise price entry with dollar sign prefix
+- **Real-time Updates**: Products filter as you type
 - **Collapsible Section**: Keeps UI clean when not in use
-- **Clear Price Display**: Shows current range selection
-- **Accessible**: Proper ARIA labels and keyboard support
+- **Clear Price Display**: Shows current range selection below inputs
+- **Quick Reset**: One-click button to restore default range
+- **Accessible**: Proper labels, placeholders, and ARIA attributes
 - **Integrates with Other Filters**: Works alongside category/search
 
 **Why This Improves UX:**
 - Essential for budget-conscious shopping
-- Reduces time to find products in price range
+- Precise control over exact price points
 - Industry standard feature
-- Visual, intuitive control
-- Better than typing prices manually
+- Clean, modern interface
+- Easy to type specific values
 
 ---
 
@@ -1736,8 +1745,7 @@ app/
 
 components/
 ├── ui/
-│   ├── slider.tsx            # New: Price range slider component
-│   └── ...                   # Other shadcn/ui components
+│   └── ...                   # shadcn/ui components (button, input, card, etc.)
 ├── cart-icon.tsx             # New: Cart icon with item count badge
 ├── wishlist-icon.tsx         # New: Wishlist icon with item count badge
 ├── image-zoom.tsx            # New: Interactive image zoom on hover
@@ -1753,7 +1761,7 @@ lib/
 
 next.config.ts                # Enhanced: Image hosts, security headers, tracing
 
-package.json                  # Updated: Added @radix-ui/react-slider dependency
+package.json                  # Updated: Dependencies for UI components
 ```
 
 ### API Endpoints Used
@@ -1803,7 +1811,7 @@ Visit [http://localhost:3000](http://localhost:3000) to view the application.
 - **Image Zoom**: Hover over product images for detailed view (150% zoom)
 - **Dark Mode**: Toggle between light and dark themes (syncs with system preferences)
 - **Skip to Content**: Keyboard-accessible link for screen readers
-- **Advanced Filters**: Collapsible filter section with price range slider
+- **Advanced Filters**: Collapsible filter section with price range inputs (from/to)
 
 ### Product Browsing
 - **Search**: Global search across all products with 300ms debounce
@@ -1958,10 +1966,12 @@ To verify all fixes are working:
 
 20. **Price Range Filter**:
     - Click "Advanced Filters" on home page
-    - Adjust price range slider
+    - Enter values in "From" and "To" input fields
     - Verify products filter in real-time
     - Check price range display updates
+    - Test editing values (backspace should work properly)
     - Combine with category filters
+    - Click "Reset" button to restore default values
     - Verify "Clear Filters" resets price range
 
 21. **Skip to Content Link**:
@@ -2077,7 +2087,7 @@ This project identified and fixed **32 bugs** and added **15 major enhancements*
 10. **Shopping Cart System** - Full cart functionality with localStorage persistence
 11. **Wishlist Feature** - Save items for later with localStorage persistence
 12. **Image Zoom on Hover** - Interactive product image magnification
-13. **Advanced Price Filtering** - Slider-based price range filter
+13. **Advanced Price Filtering** - Input-based price range filter with from/to fields
 14. **Skip to Content Link** - Accessibility feature for keyboard users
 15. **Quick Action Buttons** - Cart/wishlist buttons on product cards
 

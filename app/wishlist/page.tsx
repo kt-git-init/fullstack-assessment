@@ -25,7 +25,7 @@ export default function WishlistPage() {
           <div className="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
             <div className="flex items-center justify-between">
               <Link href="/">
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold cursor-pointer hover:opacity-80 transition-opacity text-foreground dark:bg-gradient-to-r dark:from-primary dark:to-primary/60 dark:bg-clip-text dark:text-transparent">
                   StackShop
                 </h1>
               </Link>
