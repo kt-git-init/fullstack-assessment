@@ -162,13 +162,26 @@ export default function Home() {
             </div>
 
             <Select
+              key={`category-${selectedCategory || "all"}`}
               value={selectedCategory}
-              onValueChange={(value) => setSelectedCategory(value || undefined)}
+              onValueChange={(value) => {
+                if (value === "all") {
+                  setSelectedCategory(undefined);
+                  setSelectedSubCategory(undefined);
+                } else {
+                  setSelectedCategory(value);
+                  // Clear search when selecting a category for category-specific browsing
+                  if (search) {
+                    setSearch("");
+                  }
+                }
+              }}
             >
               <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
@@ -177,17 +190,23 @@ export default function Home() {
               </SelectContent>
             </Select>
 
-            {selectedCategory && subCategories.length > 0 && (
+            {selectedCategory && subCategories.length > 1 && (
               <Select
+                key={`subcategory-${selectedSubCategory || "all"}-${selectedCategory}`}
                 value={selectedSubCategory}
-                onValueChange={(value) =>
-                  setSelectedSubCategory(value || undefined)
-                }
+                onValueChange={(value) => {
+                  if (value === "all") {
+                    setSelectedSubCategory(undefined);
+                  } else {
+                    setSelectedSubCategory(value);
+                  }
+                }}
               >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="All Subcategories" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">All Subcategories</SelectItem>
                   {subCategories.map((subCat) => (
                     <SelectItem key={subCat} value={subCat}>
                       {subCat}
