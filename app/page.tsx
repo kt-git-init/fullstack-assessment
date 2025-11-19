@@ -46,11 +46,15 @@ export default function Home() {
     string | undefined
   >(undefined);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/categories")
       .then((res) => res.json())
-      .then((data) => setCategories(data.categories));
+      .then((data) => setCategories(data.categories))
+      .catch((error) => {
+        console.error('Failed to fetch categories:', error);
+      });
   }, []);
 
   useEffect(() => {
@@ -72,6 +76,7 @@ export default function Home() {
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
     if (search) params.append("search", search);
     if (selectedCategory) params.append("category", selectedCategory);
@@ -79,7 +84,15 @@ export default function Home() {
     params.append("limit", "20");
 
     fetch(`/api/products?${params}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status >= 500) {
+          throw new Error('Server error. Please try again later.');
+        }
+        if (!res.ok) {
+          throw new Error('Failed to fetch products. Please try again.');
+        }
+        return res.json();
+      })
       .then((data) => {
         // Normalize products to ensure imageUrls is always an array
         const normalizedProducts = data.products.map((product: Product) => ({
@@ -87,6 +100,15 @@ export default function Home() {
           imageUrls: product.imageUrls || [],
         }));
         setProducts(normalizedProducts);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch products:', error);
+        if (error instanceof TypeError) {
+          setError('Unable to connect to the server. Please check your internet connection.');
+        } else {
+          setError(error.message || 'Failed to load products. Please try again.');
+        }
         setLoading(false);
       });
   }, [search, selectedCategory, selectedSubCategory]);
@@ -161,7 +183,20 @@ export default function Home() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {loading ? (
+        {error ? (
+          <div className="text-center py-12">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button
+              onClick={() => {
+                setSearch("");
+                setSelectedCategory(undefined);
+                setSelectedSubCategory(undefined);
+              }}
+            >
+              Reset Filters
+            </Button>
+          </div>
+        ) : loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading products...</p>
           </div>
