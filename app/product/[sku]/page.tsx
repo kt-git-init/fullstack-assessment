@@ -77,12 +77,63 @@ export default function ProductPage() {
               Back to Products
             </Button>
           </Link>
-          <Card className="p-8 md:p-12 shadow-sm">
-            <div className="flex flex-col items-center justify-center space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              <p className="text-center text-muted-foreground">Loading product details...</p>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+            {/* Image skeleton */}
+            <div className="space-y-4">
+              <Card className="overflow-hidden shadow-sm">
+                <CardContent className="p-4 md:p-8">
+                  <div className="relative h-64 md:h-80 lg:h-96 w-full bg-muted animate-pulse rounded-lg"></div>
+                </CardContent>
+              </Card>
+              {/* Thumbnail skeletons */}
+              <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+                {[...Array(4)].map((_, idx) => (
+                  <div key={idx} className="h-16 md:h-20 bg-muted animate-pulse rounded-lg"></div>
+                ))}
+              </div>
             </div>
-          </Card>
+
+            {/* Product details skeleton */}
+            <div className="space-y-6">
+              <Card className="shadow-sm">
+                <CardContent className="p-4 md:p-6">
+                  {/* Badges */}
+                  <div className="flex gap-2 mb-3">
+                    <div className="h-6 w-20 bg-muted animate-pulse rounded-full"></div>
+                    <div className="h-6 w-24 bg-muted animate-pulse rounded-full"></div>
+                  </div>
+                  {/* Title */}
+                  <div className="space-y-2 mb-4">
+                    <div className="h-8 bg-muted animate-pulse rounded w-full"></div>
+                    <div className="h-8 bg-muted animate-pulse rounded w-3/4"></div>
+                  </div>
+                  {/* SKU */}
+                  <div className="h-4 bg-muted animate-pulse rounded w-32 mb-4"></div>
+                  {/* Price */}
+                  <div className="pt-3 border-t">
+                    <div className="h-3 bg-muted animate-pulse rounded w-12 mb-2"></div>
+                    <div className="h-10 bg-muted animate-pulse rounded w-32"></div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Features skeleton */}
+              <Card className="shadow-sm">
+                <CardContent className="p-4 md:p-6">
+                  <div className="h-6 bg-muted animate-pulse rounded w-32 mb-4"></div>
+                  <div className="space-y-3">
+                    {[...Array(5)].map((_, idx) => (
+                      <div key={idx} className="flex items-start gap-3">
+                        <div className="mt-1.5 h-2 w-2 rounded-full bg-muted animate-pulse"></div>
+                        <div className="h-4 bg-muted animate-pulse rounded flex-1"></div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     );

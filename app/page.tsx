@@ -284,14 +284,44 @@ export default function Home() {
             </Card>
           </div>
         ) : loading ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <Card className="p-8 md:p-12 shadow-sm">
-              <div className="flex flex-col items-center justify-center space-y-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                <p className="text-muted-foreground">Loading products...</p>
-              </div>
-            </Card>
-          </div>
+          <>
+            <p className="text-sm text-muted-foreground mb-4">
+              <span className="inline-block h-4 w-48 bg-muted animate-pulse rounded"></span>
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+              {[...Array(8)].map((_, idx) => (
+                <Card key={idx} className="h-full flex flex-col shadow-sm">
+                  {/* Image skeleton */}
+                  <CardHeader className="p-3 md:p-4">
+                    <div className="relative h-36 md:h-40 w-full bg-muted animate-pulse rounded"></div>
+                  </CardHeader>
+                  
+                  {/* Content skeleton */}
+                  <CardContent className="pt-3 md:pt-4 flex-1 flex flex-col px-3 md:px-6">
+                    {/* Title */}
+                    <div className="space-y-2 mb-2">
+                      <div className="h-4 bg-muted animate-pulse rounded w-full"></div>
+                      <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
+                    </div>
+                    
+                    {/* Badges */}
+                    <div className="flex gap-1.5 md:gap-2 mb-3">
+                      <div className="h-5 w-16 bg-muted animate-pulse rounded-full"></div>
+                      <div className="h-5 w-20 bg-muted animate-pulse rounded-full"></div>
+                    </div>
+                    
+                    {/* Price */}
+                    <div className="h-6 bg-muted animate-pulse rounded w-20 mt-auto mb-2"></div>
+                  </CardContent>
+                  
+                  {/* Button skeleton */}
+                  <CardFooter className="pt-0 mt-auto px-3 md:px-6 pb-3 md:pb-6">
+                    <div className="h-9 bg-muted animate-pulse rounded w-full"></div>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </>
         ) : products.length === 0 ? (
           <div className="flex items-center justify-center min-h-[400px]">
             <Card className="p-8 md:p-12 shadow-sm">
