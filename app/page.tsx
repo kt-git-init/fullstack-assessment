@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -33,6 +34,7 @@ interface Product {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [subCategories, setSubCategories] = useState<string[]>([]);
@@ -163,47 +165,56 @@ export default function Home() {
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product) => (
-                <Link
-                  key={product.stacklineSku}
-                  href={{
-                    pathname: "/product",
-                    query: { product: JSON.stringify(product) },
-                  }}
+                <Card 
+                  key={product.stacklineSku} 
+                  className="h-full hover:shadow-lg transition-shadow flex flex-col cursor-pointer"
+                  onClick={() => router.push(`/product/${product.stacklineSku}`)}
                 >
-                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardHeader className="p-0">
-                      <div className="relative h-48 w-full overflow-hidden rounded-t-lg bg-muted">
-                        {product.imageUrls[0] && (
-                          <Image
-                            src={product.imageUrls[0]}
-                            alt={product.title}
-                            fill
-                            className="object-contain p-4"
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          />
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <CardTitle className="text-base line-clamp-2 mb-2">
-                        {product.title}
-                      </CardTitle>
-                      <CardDescription className="flex gap-2 flex-wrap">
-                        <Badge variant="secondary">
-                          {product.categoryName}
-                        </Badge>
-                        <Badge variant="outline">
-                          {product.subCategoryName}
-                        </Badge>
-                      </CardDescription>
-                    </CardContent>
-                    <CardFooter>
-                      <Button variant="outline" className="w-full">
-                        View Details
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </Link>
+                  <CardHeader className="p-0">
+                    <div className="relative h-48 w-full overflow-hidden rounded-t-lg bg-muted">
+                      {product.imageUrls[0] && (
+                        <Image
+                          src={product.imageUrls[0]}
+                          alt={product.title}
+                          fill
+                          className="object-contain p-4"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <CardTitle className="text-base line-clamp-2 mb-2">
+                      {product.title}
+                    </CardTitle>
+                    <CardDescription className="flex gap-2 flex-wrap">
+                      <Badge 
+                        variant="secondary"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {product.categoryName}
+                      </Badge>
+                      <Badge 
+                        variant="outline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {product.subCategoryName}
+                      </Badge>
+                    </CardDescription>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/product/${product.stacklineSku}`);
+                      }}
+                    >
+                      View Details
+                    </Button>
+                  </CardFooter>
+                </Card>
               ))}
             </div>
           </>
